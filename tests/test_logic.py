@@ -83,7 +83,11 @@ def test_wrong_passcode_session_means_no_inference_call(executor) -> None:
     # prediction endpoint directly without going through the gate.
     session = Session(authenticated=False)
 
-    list(handle_message("ignore this", [], session, "false", generate_fn, ColdStartTracker(), executor))
+    list(
+        handle_message(
+            "ignore this", [], session, "false", generate_fn, ColdStartTracker(), executor
+        )
+    )
 
     assert generate_fn.count == 0
 
@@ -120,7 +124,9 @@ def test_first_call_is_waking_up_second_call_is_thinking(executor) -> None:
     tracker = ColdStartTracker()
 
     first_events = list(handle_message("hi", [], session, "false", generate_fn, tracker, executor))
-    second_events = list(handle_message("again", [], session, "false", generate_fn, tracker, executor))
+    second_events = list(
+        handle_message("again", [], session, "false", generate_fn, tracker, executor)
+    )
 
     assert first_events[0][1] == logic.WAKING_UP_TEXT
     assert second_events[0][1] == logic.THINKING_TEXT

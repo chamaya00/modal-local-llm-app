@@ -117,7 +117,8 @@ def run_chat_turn(
             break
         except concurrent.futures.TimeoutError:
             elapsed = time.monotonic() - start
-            if cold and not warned and elapsed > WAKING_UP_CEILING_SECONDS * STILL_WAKING_MULTIPLIER:
+            still_waking_after = WAKING_UP_CEILING_SECONDS * STILL_WAKING_MULTIPLIER
+            if cold and not warned and elapsed > still_waking_after:
                 warned = True
                 yield STILL_WAKING_TEXT, None
 
