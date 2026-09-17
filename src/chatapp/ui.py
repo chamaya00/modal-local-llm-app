@@ -13,6 +13,7 @@ from typing import Any
 import gradio as gr
 
 from chatapp.logic import (
+    PAUSED_TEXT,
     ColdStartTracker,
     Session,
     handle_message,
@@ -54,10 +55,7 @@ def build_demo(
         session_state = gr.State(Session())
 
         with gr.Group(visible=False) as paused_screen:
-            gr.Markdown(
-                "This demo is paused to stay within its monthly compute "
-                "budget. It'll be back after the credit resets."
-            )
+            gr.Markdown(PAUSED_TEXT)
 
         with gr.Group(visible=True) as passcode_gate:
             passcode_input = gr.Textbox(label="Passcode", type="password")
