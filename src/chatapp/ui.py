@@ -63,7 +63,9 @@ def build_demo(
             passcode_submit = gr.Button("Enter")
 
         with gr.Group(visible=False) as chat_panel:
-            chatbot = gr.Chatbot(type="messages", label="Chat")
+            # `type` is a real Gradio 6 kwarg (the "messages" format this app
+            # relies on); gradio's bundled stubs for this version omit it.
+            chatbot = gr.Chatbot(type="messages", label="Chat")  # type: ignore[call-arg]
             status_banner = gr.Markdown("")
             message_box = gr.Textbox(label="Message", interactive=True)
             send_button = gr.Button("Send")
