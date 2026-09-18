@@ -5,7 +5,10 @@ description = "A Modal-hosted Gradio chat UI serving an open-weight LLM via vLLM
 requires-python = ">=3.12"
 dependencies = [
     "modal>=0.66",
-    "gradio>=5.0",
+    # Pinned exactly, matching app.py's deployed image - letting this
+    # float independently is how tests end up validating a different
+    # gradio than what's actually deployed.
+    "gradio==6.27.0",
 ]
 
 [dependency-groups]

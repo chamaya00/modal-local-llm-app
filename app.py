@@ -50,19 +50,22 @@ app = modal.App("modal-local-llm-chat")
 image = (
     modal.Image.debian_slim(python_version="3.12")
     .pip_install(
-        "vllm==0.6.3",
-        "gradio==5.4.0",
-        # gradio 5.4.0 needs fastapi>=0.115.2,<1.0; vllm 0.6.3 needs
-        # fastapi>=0.107.0 (excluding 0.113.x/0.114.0) - 0.115.6 satisfies both.
-        "fastapi==0.115.6",
-        # vllm 0.6.3 only declares transformers>=4.45.0 with no upper
-        # bound, so pip resolves whatever is newest at install time. A
-        # transformers release far newer than vllm 0.6.3 was tested
-        # against restructures how a model's rope_scaling config is
-        # represented, which crashes vllm's older, stricter parsing
-        # ("assert \"factor\" in rope_scaling") on load - pin to a
-        # release from vllm 0.6.3's own era instead.
-        "transformers==4.46.3",
+        # Current, actively-maintained vllm rather than an old pin with
+        # an unbounded transformers floor - that combination is what
+        # broke on Qwen2.5's rope_scaling config (see git history). A
+        # current vllm ships tested against a current transformers, so
+        # nothing here needs to freeze transformers separately anymore.
+        "vllm==0.29.0",
+        # Matches the version `uv sync` already resolves locally (per
+        # pyproject.toml) and that CI's tests actually run against -
+        # deploying a different gradio than what was tested is its own
+        # latent bug.
+        "gradio==6.27.0",
+        # vllm 0.29.0 needs fastapi>=0.133.0,<0.137.0; gradio 6.27.0
+        # needs fastapi>=0.115.2,<1.0. 0.136.0 satisfies both.
+        "fastapi==0.136.0",
+        # vllm 0.29.0 pins torch==2.13.0/torchvision==0.28.0/
+        # torchaudio==2.11.0 itself; no need to repeat those here.
     )
     # pip_install only pulls published packages - our own src/chatapp
     # package has to be added explicitly or the remote container never
