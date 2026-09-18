@@ -39,19 +39,28 @@ PAUSED_SECRET_KEY = "APP_PAUSED"
 MODEL_VOLUME_PATH = "/models"
 SYSTEM_PROMPT = "You are a helpful assistant."
 
-# `src/` holds the testable, framework-light package; add it to the
-# path so both `modal deploy` (run from the repo root) and the
-# in-container code below can `import chatapp`.
+# `src/` holds the testable, framework-light package; add it to the path
+# so this process (running `modal deploy` locally) can `import chatapp` -
+# needed for add_local_python_source below to find it. This does NOT put
+# chatapp inside the remote container; add_local_python_source does that.
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "src"))
 
 app = modal.App("modal-local-llm-chat")
 
-image = modal.Image.debian_slim(python_version="3.12").pip_install(
-    "vllm==0.6.3",
-    "gradio==5.4.0",
-    # gradio 5.4.0 needs fastapi>=0.115.2,<1.0; vllm 0.6.3 needs
-    # fastapi>=0.107.0 (excluding 0.113.x/0.114.0) - 0.115.6 satisfies both.
-    "fastapi==0.115.6",
+image = (
+    modal.Image.debian_slim(python_version="3.12")
+    .pip_install(
+        "vllm==0.6.3",
+        "gradio==5.4.0",
+        # gradio 5.4.0 needs fastapi>=0.115.2,<1.0; vllm 0.6.3 needs
+        # fastapi>=0.107.0 (excluding 0.113.x/0.114.0) - 0.115.6 satisfies both.
+        "fastapi==0.115.6",
+    )
+    # pip_install only pulls published packages - our own src/chatapp
+    # package has to be added explicitly or the remote container never
+    # sees it (modal deploy only auto-mounts app.py itself, not src/).
+    # Local additions go last: cheapest layer to invalidate on a code change.
+    .add_local_python_source("chatapp")
 )
 
 with image.imports():
