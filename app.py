@@ -72,6 +72,17 @@ image = (
     # sees it (modal deploy only auto-mounts app.py itself, not src/).
     # Local additions go last: cheapest layer to invalidate on a code change.
     .add_local_python_source("chatapp")
+    .env(
+        {
+            # vllm 0.29.0 picks FlashInfer for top-p/top-k sampling on
+            # supported GPUs (including L40S) and JIT-compiles it with
+            # nvcc on first use. This image has the CUDA runtime but not
+            # the CUDA toolkit, so nvcc doesn't exist and that JIT compile
+            # crashes engine startup. The native/triton sampler this falls
+            # back to is functionally equivalent for this app's needs.
+            "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        }
+    )
 )
 
 with image.imports():
