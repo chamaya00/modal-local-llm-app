@@ -49,7 +49,9 @@ app = modal.App("modal-local-llm-chat")
 image = modal.Image.debian_slim(python_version="3.12").pip_install(
     "vllm==0.6.3",
     "gradio==5.4.0",
-    "fastapi==0.115.0",
+    # gradio 5.4.0 needs fastapi>=0.115.2,<1.0; vllm 0.6.3 needs
+    # fastapi>=0.107.0 (excluding 0.113.x/0.114.0) - 0.115.6 satisfies both.
+    "fastapi==0.115.6",
 )
 
 with image.imports():
