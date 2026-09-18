@@ -67,11 +67,6 @@ image = (
         # vllm 0.29.0 pins torch==2.13.0/torchvision==0.28.0/
         # torchaudio==2.11.0 itself; no need to repeat those here.
     )
-    # pip_install only pulls published packages - our own src/chatapp
-    # package has to be added explicitly or the remote container never
-    # sees it (modal deploy only auto-mounts app.py itself, not src/).
-    # Local additions go last: cheapest layer to invalidate on a code change.
-    .add_local_python_source("chatapp")
     .env(
         {
             # vllm 0.29.0 picks FlashInfer for top-p/top-k sampling on
@@ -83,6 +78,13 @@ image = (
             "VLLM_USE_FLASHINFER_SAMPLER": "0",
         }
     )
+    # pip_install only pulls published packages - our own src/chatapp
+    # package has to be added explicitly or the remote container never
+    # sees it (modal deploy only auto-mounts app.py itself, not src/).
+    # Local additions go last: cheapest layer to invalidate on a code change.
+    # (add_local_* must be the final step in the chain - Modal errors if a
+    # build step like .env() runs after it.)
+    .add_local_python_source("chatapp")
 )
 
 with image.imports():
