@@ -55,6 +55,14 @@ image = (
         # gradio 5.4.0 needs fastapi>=0.115.2,<1.0; vllm 0.6.3 needs
         # fastapi>=0.107.0 (excluding 0.113.x/0.114.0) - 0.115.6 satisfies both.
         "fastapi==0.115.6",
+        # vllm 0.6.3 only declares transformers>=4.45.0 with no upper
+        # bound, so pip resolves whatever is newest at install time. A
+        # transformers release far newer than vllm 0.6.3 was tested
+        # against restructures how a model's rope_scaling config is
+        # represented, which crashes vllm's older, stricter parsing
+        # ("assert \"factor\" in rope_scaling") on load - pin to a
+        # release from vllm 0.6.3's own era instead.
+        "transformers==4.46.3",
     )
     # pip_install only pulls published packages - our own src/chatapp
     # package has to be added explicitly or the remote container never
