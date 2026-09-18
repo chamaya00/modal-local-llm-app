@@ -115,19 +115,29 @@ if [ -z "$passcode" ]; then
 fi
 
 # --- secrets ------------------------------------------------------------
-# --force makes this safe to re-run: overwrites rather than erroring if
-# the secret already exists.
 log ""
 log "Creating Modal secrets (chat-passcode, app-paused)..."
+
+# chat-passcode: the Codespaces secret (or what you just typed) is the
+# source of truth every time, so --force keeps it in sync on every run.
 if ! run_logged uv run modal secret create chat-passcode "PASSCODE=$passcode" --force; then
   log "Failed to create chat-passcode - see output above. Aborting."
   exit 1
 fi
-if ! run_logged uv run modal secret create app-paused "APP_PAUSED=false" --force; then
-  log "Failed to create app-paused - see output above. Aborting."
-  exit 1
+
+# app-paused: deliberately NOT --force. It's a manually-flipped operator
+# switch with no source of truth outside Modal itself, so re-running this
+# script (e.g. to redeploy code) must never silently overwrite - and
+# un-pause - an app someone paused on purpose. Only create it the first
+# time, when it doesn't exist yet.
+if run_logged uv run modal secret create app-paused "APP_PAUSED=false"; then
+  log "Created app-paused, defaulted to false (live)."
+else
+  log "app-paused already exists - left as-is, so a deliberate pause isn't undone by re-running this script."
+  log "To reset it yourself: uv run modal secret create app-paused APP_PAUSED=false --force"
 fi
-log "Secrets created (the passcode value itself is not written to this file)."
+
+log "Secrets step done (the passcode value itself is not written to this file)."
 
 # --- deploy ------------------------------------------------------------
 log ""
