@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import os
 import sys
+import threading
 
 import modal
 
@@ -103,6 +104,15 @@ model_volume = modal.Volume.from_name("chat-model-weights", create_if_missing=Tr
         modal.Secret.from_name(PAUSED_SECRET_NAME),
     ],
 )
+# This container is a web server as well as a GPU worker: it serves the
+# Gradio UI's static assets, its queue's long-lived SSE stream, and the
+# request that actually submits a message. Modal runs one input per
+# container by default, which is right for a GPU function and wrong for
+# this - the SSE stream alone would hold the only slot, and a send would
+# hang rather than fail. `@modal.concurrent` must decorate the class;
+# Modal rejects it on a method, and the older `allow_concurrent_inputs=`
+# kwarg on `@app.cls` now raises a DeprecationError.
+@modal.concurrent(max_inputs=100)
 class ChatServer:
     @modal.enter()
     def load_model(self) -> None:
@@ -114,12 +124,20 @@ class ChatServer:
             gpu_memory_utilization=0.90,
         )
         self.tracker = ColdStartTracker()
+        # Concurrency above is for connections, not for inference. Modal
+        # runs a sync function's concurrent inputs on real threads, and
+        # vLLM's `LLM` is not safe to drive from several at once, so every
+        # call into it is serialised here. Two visitors sharing the
+        # passcode queue behind each other instead of corrupting one
+        # engine - the right trade for an occasional personal demo.
+        self.inference_lock = threading.Lock()
 
     def generate(self, message: str, history: list[dict[str, str]]) -> str:
         messages = [{"role": "system", "content": SYSTEM_PROMPT}, *history]
         messages.append({"role": "user", "content": message})
         sampling_params = SamplingParams(temperature=0.7, max_tokens=1024)
-        outputs = self.llm.chat(messages, sampling_params)
+        with self.inference_lock:
+            outputs = self.llm.chat(messages, sampling_params)
         return outputs[0].outputs[0].text
 
     @modal.asgi_app()
